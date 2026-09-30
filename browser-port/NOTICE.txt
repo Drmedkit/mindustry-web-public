@@ -1,0 +1,33 @@
+Mindustry browser port
+======================
+
+This website runs an unofficial browser build of Mindustry. It is not made or
+endorsed by Anuken or the Mindustry project.
+
+Source code
+-----------
+The complete corresponding source for this build, including every change made
+for the browser, is available at:
+
+    @SOURCE_URL@
+
+Mindustry and this port are free software under the GNU General Public License
+version 3 (see LICENSE.txt). You may copy, change and redistribute them under
+those terms.
+
+Included components
+-------------------
+- Mindustry, copyright Anuken and contributors. GPL-3.0.
+  https://github.com/Anuken/Mindustry
+- Arc, copyright Anuken and contributors. Apache License 2.0
+  (licenses/Arc-LICENSE.txt). https://github.com/Anuken/Arc
+- gdx-teavm, copyright xpenatan and contributors. Apache License 2.0
+  (licenses/gdx-teavm-LICENSE.txt). Selected browser primitives are adapted
+  into Arc's browser backend. https://github.com/xpenatan/gdx-teavm
+- freetype.js is FreeType compiled to JavaScript by gdx-teavm.
+  Portions of this software are copyright (C) The FreeType Project
+  (www.freetype.org). All rights reserved. Used under the FreeType License.
+  FreeType source: https://gitlab.freedesktop.org/freetype/freetype
+- TeaVM runtime, Apache License 2.0. https://teavm.org
+- JZlib, copyright ymnk, JCraft, Inc. BSD-style license.
+  https://github.com/ymnk/jzlib

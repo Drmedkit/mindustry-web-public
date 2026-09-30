@@ -1,0 +1,14 @@
+* text=auto eol=lf
+*.sh text eol=lf
+gradlew text eol=lf
+*.bat text eol=crlf
+*.png binary
+*.jpg binary
+*.ogg binary
+*.mp3 binary
+*.msav binary
+*.msch binary
+*.jar binary
+*.woff binary
+*.woff2 binary
+*.aatls binary

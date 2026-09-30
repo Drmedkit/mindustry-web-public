@@ -1,0 +1,20 @@
+{
+  "name": "mindustry-web-public",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Unofficial GPL-3.0 Mindustry Serpulo browser port build and deployment tooling.",
+  "scripts": {
+    "check": "bash scripts/check-port.sh",
+    "check:browser": "bash scripts/check-browser-probe.sh",
+    "check:relay": "node scripts/check-relay.mjs",
+    "check:js": "node --test scripts/tests/vfs-storage.test.mjs scripts/tests/domain-proxy.test.mjs scripts/tests/asset-policy.test.mjs scripts/tests/atlas-split.test.mjs scripts/tests/relay.test.mjs scripts/tests/png-decoder.test.mjs",
+    "build:probe": "cd browser-probe && bash gradlew --offline --no-daemon browserDist",
+    "build:web": "bash scripts/build-web.sh",
+    "package": "bash scripts/package-release.sh",
+    "deploy": "bash scripts/deploy.sh",
+    "deploy:pages": "wrangler pages deploy browser-game/build/browser-dist --project-name mindustry-browser-port"
+  },
+  "devDependencies": {
+    "wrangler": "4.110.0"
+  }
+}

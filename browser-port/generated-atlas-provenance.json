@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "method": "local-source-build",
+  "generatedAt": "2026-09-30T10:38:11.942Z",
+  "command": "scripts/pack-atlas.sh (Mindustry :tools:pack with -PsplitSprites=scripts/split-erekir-sprites.mjs)",
+  "mindustryCommit": "439799ce8ff1480d1d169c5ba7ff3def422999de",
+  "arcCommit": "6a97615f6fd9f8e9af573d810fe8591ad483224c",
+  "outputs": [
+    {
+      "path": "sprites/sprites.aatls",
+      "sha256": "f5e1bd6aac2db485695e819cbd89a3b5b291982fda1b319c7da3a6f04c52c73c"
+    },
+    {
+      "path": "sprites/fallback/sprites.aatls",
+      "sha256": "4495c79b241dea6b4357d831c0cb9fc31ae6ae81d345239f1a7414cc26f86308"
+    }
+  ]
+}

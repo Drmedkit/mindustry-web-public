@@ -1,0 +1,50 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  // Worker name; also the first part of its workers.dev URL. Change it if you like.
+  "name": "mindustry-browser-domain",
+  "main": "src/index.js",
+  "compatibility_date": "2026-07-12",
+  // No account_id here: wrangler uses the account you are logged in to. With several
+  // accounts, add "account_id": "<YOUR_CLOUDFLARE_ACCOUNT_ID>" or set CLOUDFLARE_ACCOUNT_ID.
+  // Co-op rooms: one Durable Object per room relays the host's game to its players.
+  "durable_objects": {
+    "bindings": [
+      { "name": "ROOMS", "class_name": "Room" },
+      { "name": "LOBBY", "class_name": "Lobby" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["Room"] },
+    { "tag": "v2", "new_sqlite_classes": ["Lobby"] }
+  ],
+  // Per-IP limits: opening rooms, and join attempts (so room codes cannot be guessed).
+  // namespace_id is any number you choose, unique within your account.
+  "ratelimits": [
+    { "name": "ROOM_CREATION", "namespace_id": "1101", "simple": { "limit": 10, "period": 60 } },
+    { "name": "ROOM_JOINS", "namespace_id": "1102", "simple": { "limit": 30, "period": 60 } }
+  ],
+  "vars": {
+    // REQUIRED: host name of your Cloudflare Pages project that holds the game files,
+    // as printed by `wrangler pages deploy` (for example "my-project.pages.dev").
+    "PAGES_ORIGIN": "REPLACE_WITH_YOUR_PAGES_PROJECT.pages.dev",
+    // Set to the deployed bundle's build ID (index.html: globalThis.mindustryBuild) on deploy.
+    "BUILD_ID": "any",
+    // The Worker's own origin may always open rooms. List other page origins here
+    // (comma-separated), e.g. "https://play.example.com".
+    "ALLOWED_ORIGINS": "",
+    "ALLOW_LOCALHOST": "false",
+    // Optional share card (Open Graph / Twitter tags). Leave SITE_URL empty to skip it.
+    "SITE_URL": "",
+    "SHARE_SITE_NAME": "",
+    "SHARE_TITLE": "",
+    "SHARE_DESCRIPTION": "",
+    "SHARE_IMAGE": ""
+  },
+  // Served at https://<name>.<your-subdomain>.workers.dev by default.
+  "workers_dev": true
+  // To serve the game on your own domain (it must be a zone in your Cloudflare account),
+  // add a comma after the line above and uncomment:
+  // "routes": [
+  //   { "pattern": "<YOUR_GAME_HOSTNAME>", "custom_domain": true }
+  // ]
+}

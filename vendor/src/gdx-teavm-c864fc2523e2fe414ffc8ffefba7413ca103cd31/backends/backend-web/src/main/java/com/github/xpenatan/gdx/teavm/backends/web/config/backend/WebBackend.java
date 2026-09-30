@@ -1,0 +1,228 @@
+package com.github.xpenatan.gdx.teavm.backends.web.config.backend;
+
+import com.badlogic.gdx.files.FileHandle;
+import com.github.xpenatan.gdx.teavm.backends.shared.config.AssetFilter;
+import com.github.xpenatan.gdx.teavm.backends.shared.config.AssetOutput;
+import com.github.xpenatan.gdx.teavm.backends.shared.config.AssetsCopy;
+import com.github.xpenatan.gdx.teavm.backends.shared.config.backend.TeaBackend;
+import com.github.xpenatan.gdx.teavm.backends.shared.config.builder.TeaBuilderData;
+import com.github.xpenatan.gdx.teavm.backends.shared.config.plugin.GdxTeaVMPluginAssetSupport;
+import com.github.xpenatan.gdx.teavm.backends.shared.config.plugin.GdxTeaVMPluginConfig;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import org.teavm.tooling.TeaVMTargetType;
+
+public class WebBackend extends TeaBackend {
+    public String logoPath = "startup-logo.png";
+    public String htmlTitle = "gdx-teavm";
+    public String mainClassArgs = "";
+    public int htmlWidth = 800;
+    public int htmlHeight = 600;
+    public boolean copyLoadingAsset = true;
+    public String webappFolderName = "webapp";
+    public boolean isWebAssembly;
+    public AssetFilter scriptFilter;
+    public boolean startJettyAfterBuild = false;
+    public int jettyPort = 8080;
+
+    private JettyServer server;
+
+    public WebBackend setWebAssembly(boolean isWebAssembly) {
+        this.isWebAssembly = isWebAssembly;
+        return this;
+    }
+
+    public WebBackend setLogoPath(String logoPath) {
+        this.logoPath = logoPath;
+        return this;
+    }
+
+    public WebBackend setHtmlTitle(String htmlTitle) {
+        this.htmlTitle = htmlTitle;
+        return this;
+    }
+
+    public WebBackend setMainClassArgs(String mainClassArgs) {
+        this.mainClassArgs = mainClassArgs;
+        return this;
+    }
+
+    public WebBackend setHtmlWidth(int htmlWidth) {
+        this.htmlWidth = htmlWidth;
+        return this;
+    }
+
+    public WebBackend setHtmlHeight(int htmlHeight) {
+        this.htmlHeight = htmlHeight;
+        return this;
+    }
+
+    public WebBackend setCopyLoadingAsset(boolean copyLoadingAsset) {
+        this.copyLoadingAsset = copyLoadingAsset;
+        return this;
+    }
+
+    public WebBackend setWebappFolderName(String webappFolderName) {
+        this.webappFolderName = webappFolderName;
+        return this;
+    }
+
+    public WebBackend setScriptFilter(AssetFilter scriptFilter) {
+        this.scriptFilter = scriptFilter;
+        return this;
+    }
+
+    public WebBackend setStartJettyAfterBuild(boolean startJettyAfterBuild) {
+        this.startJettyAfterBuild = startJettyAfterBuild;
+        return this;
+    }
+
+    public WebBackend setJettyPort(int port) {
+        this.jettyPort = port;
+        return this;
+    }
+
+    public void startJetty(int port, String path) {
+        stopJetty();
+        server.startServer(port, path, true);
+    }
+
+    public void stopJetty() {
+        server.stopServer();
+    }
+
+    @Override
+    protected void setup(TeaBuilderData data) {
+        server = new JettyServer();
+
+        if(isWebAssembly) {
+            targetType = TeaVMTargetType.WEBASSEMBLY_GC;
+            tool.setTargetFileName(data.outputName + ".wasm");
+        } else {
+            targetType = TeaVMTargetType.JAVASCRIPT;
+            tool.setTargetFileName(data.outputName + ".js");
+        }
+
+        if(data.releasePath != null) {
+            releasePath = new FileHandle(data.releasePath.getAbsolutePath().replace("\\", "/"));
+        }
+        else {
+            releasePath = new FileHandle(new File(data.output, webappFolderName).getAbsolutePath().replace("\\", "/"));
+        }
+        tool.setTargetDirectory(releasePath.file());
+        setupWebapp(data);
+    }
+
+    @Override
+    protected void build(TeaBuilderData data) {
+        super.build(data);
+        if(startJettyAfterBuild) {
+            startJetty(jettyPort, releasePath.path());
+        }
+    }
+
+    protected void setupWebapp(TeaBuilderData data) {
+        InputStream indexSteam = classLoader.getResourceAsStream("webapp/index.html");
+        InputStream webXMLStream = classLoader.getResourceAsStream("webapp/WEB-INF/web.xml");
+
+        String webXML = "";
+        String indexHtml = "";
+
+        if(indexSteam != null) {
+            try {
+                byte[] bytes = indexSteam.readAllBytes();
+                indexHtml = new String(bytes);
+            } catch(IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        if(webXMLStream != null) {
+            try {
+                byte[] bytes = webXMLStream.readAllBytes();
+                webXML = new String(bytes);
+            } catch(IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        String logo = logoPath;
+
+        String mode = "main(%ARGS%)";
+        String jsScript = "<script type=\"text/javascript\" charset=\"utf-8\" src=\""  + data.outputName + ".js\"></script>";
+        if(targetType == TeaVMTargetType.WEBASSEMBLY_GC) {
+            mode = "let teavm = await TeaVM.wasmGC.load(\"" + data.outputName + ".wasm\"); teavm.exports.main([%ARGS%]);";
+            String jsName = "wasm-gc-runtime.min.js";
+            jsScript = "<script type=\"text/javascript\" charset=\"utf-8\" src=\"" + jsName + "\"></script>";
+
+            copyRuntime(releasePath.file());
+        }
+
+        indexHtml = indexHtml.replace("%MODE%", mode);
+        indexHtml = indexHtml.replace("%JS_SCRIPT%", jsScript);
+        indexHtml = indexHtml.replace("%TITLE%", htmlTitle);
+        indexHtml = indexHtml.replace("%WIDTH%", String.valueOf(htmlWidth));
+        indexHtml = indexHtml.replace("%HEIGHT%", String.valueOf(htmlHeight));
+        indexHtml = indexHtml.replace("%ARGS%", mainClassArgs);
+
+        ArrayList<String> rootAssets = new ArrayList<>();
+
+        if(copyLoadingAsset) {
+            rootAssets.add(logo);
+        }
+
+        FileHandle assetsFolder = releasePath.child(ASSETS_FOLDER_NAME);
+        FileHandle indexHandler = releasePath.child("index.html");
+        FileHandle webXMLFile = releasePath.child("WEB-INF").child("web.xml");
+        indexHandler.writeString(indexHtml, false);
+        webXMLFile.writeString(webXML, false);
+        try {
+            AssetsCopy.copyClasspathResources(classLoader, rootAssets, null,
+                    AssetOutput.fileHandle(assetsFolder), "");
+        } catch(IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void copyRuntime(File setTargetDirectory) {
+        try {
+            var name = new StringBuilder("wasm-gc-runtime.min");
+            setTargetDirectory.mkdirs();
+            var resourceName = "org/teavm/backend/wasm/" + name + ".js";
+            var classLoader = WebBackend.class.getClassLoader();
+            try (var input = classLoader.getResourceAsStream(resourceName)) {
+                Files.copy(input, setTargetDirectory.toPath().resolve(name + ".js"), StandardCopyOption.REPLACE_EXISTING);
+            }
+        } catch(Throwable t) {
+            throw new RuntimeException(t);
+        }
+    }
+
+    @Override
+    protected void copyAssets(TeaBuilderData data) {
+        try {
+            scripts.clear();
+            cppFiles.clear();
+            AssetsCopy.AssetPlan plan = AssetsCopy.createAssetPlan(classLoader, acceptedURL, data.assets, assetFilter);
+            scripts.addAll(plan.scripts);
+            cppFiles.addAll(plan.cppFiles);
+
+            AssetOutput output = AssetOutput.fileHandle(releasePath);
+            AssetsCopy.copyPlanAssets(classLoader, plan, output, ASSETS_FOLDER_NAME);
+            tool.getProperties().setProperty(GdxTeaVMPluginConfig.ASSET_MANIFEST,
+                    GdxTeaVMPluginAssetSupport.encodeManifest(plan));
+        } catch(IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        FileHandle scriptsFolder = releasePath.child("scripts");
+        try {
+            AssetsCopy.copyClasspathResources(classLoader, scripts, scriptFilter,
+                    AssetOutput.fileHandle(scriptsFolder), "");
+        } catch(IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}

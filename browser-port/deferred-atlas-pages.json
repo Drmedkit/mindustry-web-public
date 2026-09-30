@@ -1,0 +1,9 @@
+{
+  "description": "Atlas pages holding only sprites of content hidden in the browser build. The page substitutes a 1x1 transparent image and never downloads them.",
+  "pages": [
+    "sprites/sprites5.png",
+    "sprites/fallback/sprites8.png",
+    "sprites/fallback/sprites9.png",
+    "sprites/fallback/sprites10.png"
+  ]
+}

@@ -1,0 +1,57 @@
+package com.github.xpenatan.gdx.teavm.backends.web.assetloader;
+
+import com.badlogic.gdx.Files.FileType;
+
+/**
+ * AssetLoader is a wrapper on AssetDownloader that adds additional functionalities
+ * like "[website]/assets" as default asset path.
+ *
+ * @author xpenatan
+ */
+public interface AssetLoader {
+
+    void preload(AssetLoaderListener<Void> preloadListener);
+
+    void preload(String assetFileUrl, AssetLoaderListener<Void> preloadListener);
+
+    String getAssetUrl();
+
+    String getScriptUrl();
+
+    /** Return true if asset is in queue or downloading */
+    boolean isAssetInQueueOrDownloading(String path);
+
+    boolean isAssetLoaded(FileType fileType, String path);
+
+    /** Return true if a previous load attempt for the asset failed (e.g. file not found). */
+    boolean isAssetFailed(FileType fileType, String path);
+
+    /**
+     * Load asset and add to FileHandle system. Skip downloading if file already exists
+     */
+    void loadAsset(String path, AssetType assetType, FileType fileType);
+
+    /**
+     * Load asset and add to FileHandle system. Skip downloading if file already exists
+     */
+    void loadAsset(String path, AssetType assetType, FileType fileType, AssetLoaderListener<WebBlob> listener);
+
+    /**
+     * Load asset and add to FileHandle system. Overwrite true will update the file.
+     */
+    void loadAsset(String path, AssetType assetType, FileType fileType, AssetLoaderListener<WebBlob> listener, boolean overwrite);
+
+    /**
+     * Load script and attach to html document
+     */
+    void loadScript(String path);
+
+    /**
+     * Load script and attach to html document
+     */
+    void loadScript(String path, AssetLoaderListener<String> listener);
+
+    int getQueue();
+    int getDownloadingCount();
+    boolean isDownloading();
+}

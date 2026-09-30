@@ -1,0 +1,98 @@
+plugins {
+    id "java"
+    id "org.teavm" version "0.15.0"
+}
+
+group = "io.mindustry.browser"
+version = "0.1.0-SNAPSHOT"
+
+def productionBuild = providers.gradleProperty("production").map { it.toBoolean() }.getOrElse(false)
+
+repositories {
+    mavenCentral()
+    maven { url = "https://jitpack.io" }
+}
+
+def arcJar = { String path -> files("../Arc/${path}/build/libs/${new File(path).name}-1.0.jar") }
+
+dependencies {
+    implementation teavm.libs.jsoApis
+    compileOnly "org.teavm:teavm-core:0.15.0"
+    implementation files("../Mindustry/core/build/libs/core-release.jar")
+    implementation arcJar("extensions/flabel")
+    implementation arcJar("extensions/g3d")
+    implementation arcJar("extensions/fx")
+    implementation arcJar("extensions/arcnet")
+    implementation arcJar("extensions/packer")
+    implementation "at.yawk.lz4:lz4-java:1.10.2"
+    implementation "com.jcraft:jzlib:1.1.3"
+    implementation "com.github.Anuken:rhino:e74ac129d2bff72c1deb536d7d99a0dbb7046d2e"
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = [
+                "src/main/java",
+                "../Arc/backends/backend-teavm/src"
+            ]
+        }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 17
+    options.encoding = "UTF-8"
+}
+
+tasks.named("compileJava") {
+    source(fileTree("../Arc/arc-core/src") {
+        exclude "arc/audio/Soloud.java"
+    })
+    source(fileTree("../Arc/extensions/freetype/src") {
+        exclude "arc/freetype/FreeType.java"
+    })
+}
+
+teavm {
+    all {
+        mainClass = "io.mindustry.browser.MindustryBrowserLauncher"
+    }
+
+    js {
+        targetFileName = "mindustry.js"
+        optimization = productionBuild ? org.teavm.gradle.api.OptimizationLevel.AGGRESSIVE : org.teavm.gradle.api.OptimizationLevel.BALANCED
+        obfuscated = productionBuild
+        sourceMap = !productionBuild
+        debugInformation = !productionBuild
+        // Null and bounds checks; -PteavmStrict=false only for measurements.
+        strict = providers.gradleProperty("teavmStrict").map { it.toBoolean() }.getOrElse(true)
+    }
+
+    // Experimental WebAssembly GC target (./gradlew generateWasmGC). Not part of the
+    // shipped build: see PERFORMANCE.md for the evaluation.
+    wasmGC {
+        targetFileName = "mindustry.wasm"
+        optimization = productionBuild ? org.teavm.gradle.api.OptimizationLevel.AGGRESSIVE : org.teavm.gradle.api.OptimizationLevel.BALANCED
+        obfuscated = productionBuild
+        strict = true
+    }
+}
+
+tasks.register("browserDist", Sync) {
+    dependsOn tasks.named("generateJavaScript")
+    from("src/main/webapp")
+    from(layout.buildDirectory.dir("generated/teavm"))
+    from("../vendor/src/gdx-teavm-c864fc2523e2fe414ffc8ffefba7413ca103cd31/extensions/web/gdx-freetype-web/src/main/resources/freetype.js")
+    from("../browser-port/assets-manifest.json")
+    from("../Mindustry/core/assets") {
+        into("assets")
+    }
+    from("../Arc/extensions/fx/assets")
+    // GPL-3.0 section 6 and the Apache-2.0 notice requirements travel with every build.
+    from("../LICENSE") { rename { "LICENSE.txt" } }
+    from("../browser-port/NOTICE.txt")
+    from("../Arc/LICENSE") { into("licenses"); rename { "Arc-LICENSE.txt" } }
+    from("../vendor/src/gdx-teavm-c864fc2523e2fe414ffc8ffefba7413ca103cd31/LICENSE") { into("licenses"); rename { "gdx-teavm-LICENSE.txt" } }
+    into(layout.buildDirectory.dir("browser-dist"))
+}

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101416">
+  <link rel="icon" href="data:,">
+  <title>Mindustry Browser Port</title>
+  <style>
+    html, body, canvas { width: 100%; height: 100%; margin: 0; }
+    body { overflow: hidden; background: #101416; color: #d7e1e5; font: 14px system-ui, sans-serif; }
+    canvas { display: block; touch-action: none; user-select: none; -webkit-user-select: none; }
+    #boot-status { position: fixed; inset: 16px auto auto 16px; margin: 0; pointer-events: none; white-space: pre-wrap; }
+    #storage-warning { position: fixed; inset: auto 16px 16px 16px; z-index: 20; margin: 0; padding: 12px 16px; background: #5c1f1f; color: #fff; border: 1px solid #e05555; }
+    #legal { position: fixed; inset: auto 16px 16px auto; z-index: 11; margin: 0; font-size: 12px; color: #8c979d; }
+    #legal a { color: inherit; }
+    body[data-playing] #legal { display: none; }
+  </style>
+</head>
+<body>
+  <canvas id="game-canvas"></canvas>
+  <p id="boot-status">Loading Mindustry browser build…</p>
+  <p id="legal">Unofficial browser build of Mindustry (GPL-3.0) · <a id="source-link" href="NOTICE.txt" target="_blank" rel="noopener">Source code</a> · <a href="NOTICE.txt" target="_blank" rel="noopener">Licenses</a></p>
+  <script>
+    // Replaced with a content hash by scripts/stamp-dist.mjs; versions shader URLs.
+    globalThis.mindustryBuild = 'dev';
+    const bootStatus = document.getElementById('boot-status');
+    addEventListener('error', event => {
+      const javaFailure = bootStatus.dataset.state === 'error' ? bootStatus.textContent : '';
+      bootStatus.textContent = `${javaFailure}${javaFailure ? '\nJavaScript stack: ' : 'Boot error: '}${event.error?.stack || event.message}`;
+      bootStatus.dataset.state = 'error';
+    });
+    addEventListener('unhandledrejection', event => {
+      bootStatus.textContent = `Boot error: ${event.reason}`;
+      bootStatus.dataset.state = 'error';
+    });
+  </script>
+  <script src="vfs-storage.js"></script>
+  <script src="png-decoder.js"></script>
+  <script src="asset-preloader.js"></script>
+  <!-- Deferred: the game script downloads while assets and saves load. -->
+  <script src="freetype.js" defer></script>
+  <script src="js/mindustry.js" defer></script>
+  <script>
+    // freetype.js is an Emscripten module that finishes initialising asynchronously;
+    // Java must not generate fonts before its runtime is ready.
+    var Module = {};
+    const freetypeReady = new Promise(resolve => { Module.onRuntimeInitialized = resolve; });
+    const gameScripts = new Promise(resolve => addEventListener('DOMContentLoaded', resolve, {once: true}));
+    Promise.all([preloadMindustryStorage(), preloadMindustryAssets(), gameScripts, freetypeReady])
+      .then(() => main())
+      .catch(error => {
+        bootStatus.textContent = `Boot error: ${error.stack || error}`;
+        bootStatus.dataset.state = 'error';
+      });
+  </script>
+</body>
+</html>

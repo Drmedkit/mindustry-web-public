@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mindustry browser port — Arc probe</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            font-family: ui-monospace, "Cascadia Code", "SFMono-Regular", monospace;
+            background: #111315;
+            color: #d8d7d1;
+        }
+
+        body {
+            min-height: 100vh;
+            margin: 0;
+            display: grid;
+            place-items: center;
+        }
+
+        main {
+            width: min(42rem, calc(100% - 3rem));
+            border: 1px solid #555750;
+            padding: 2rem;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            margin: 1.5rem 0;
+            background: #0e1315;
+        }
+
+        h1 {
+            margin: 0 0 1rem;
+            color: #ffd37f;
+            font-size: clamp(1.4rem, 4vw, 2.2rem);
+        }
+
+        p {
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+<main>
+    <h1>Arc → TeaVM probe</h1>
+    <canvas id="game-canvas" width="960" height="540"></canvas>
+    <p id="probe-status">Loading generated JavaScript…</p>
+</main>
+<script src="js/arc-probe.js"></script>
+<script>
+    window.addEventListener("error", event => {
+        const error = event.error;
+        document.getElementById("probe-status").textContent =
+            "Probe failed: " + (error && (error.stack || error.message) || event.message);
+    });
+</script>
+<script>main();</script>
+</body>
+</html>

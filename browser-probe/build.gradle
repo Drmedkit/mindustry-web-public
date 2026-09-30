@@ -1,0 +1,62 @@
+plugins {
+    id "java"
+    id "org.teavm" version "0.15.0"
+}
+
+group = "io.mindustry.browser"
+version = "0.1.0-SNAPSHOT"
+
+repositories {
+    mavenCentral()
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = [
+                "src/main/java",
+                "../Arc/backends/backend-teavm/src"
+            ]
+        }
+    }
+}
+
+dependencies {
+    implementation teavm.libs.jsoApis
+    implementation files("../Arc/arc-core/unsafe/unsafe.jar")
+}
+
+tasks.withType(JavaCompile).configureEach {
+    //TeaVM 0.15's runtime libraries require Java 17. Arc's Java 8 source
+    //compatibility remains covered independently by scripts/check-arc-core.sh.
+    options.release = 17
+    options.encoding = "UTF-8"
+}
+
+tasks.named("compileJava") {
+    source(fileTree("../Arc/arc-core/src") {
+        exclude "arc/audio/Soloud.java"
+    })
+    source("../browser-game/src/main/java/arc/audio/Soloud.java")
+}
+
+teavm {
+    all {
+        mainClass = "io.mindustry.browser.probe.ArcProbe"
+    }
+
+    js {
+        targetFileName = "arc-probe.js"
+        obfuscated = false
+        sourceMap = true
+        debugInformation = true
+        strict = true
+    }
+}
+
+tasks.register("browserDist", Sync) {
+    dependsOn tasks.named("generateJavaScript")
+    from("src/main/webapp")
+    from(layout.buildDirectory.dir("generated/teavm"))
+    into(layout.buildDirectory.dir("browser-dist"))
+}
