@@ -509,6 +509,11 @@ public class DesktopInput extends InputHandler{
             pollInputPlayer();
         }
 
+        //releasing the mouse stops shooting (upstream fix; the pinned version kept firing until the next click)
+        if(Core.input.keyRelease(Binding.select)){
+            player.shooting = false;
+        }
+
         if(!Core.scene.hasMouse() && !ui.minimapfrag.shown()){
             Core.graphics.cursor(cursorType);
             changedCursor = cursorType != SystemCursor.arrow;
